@@ -62,7 +62,7 @@ func (l *LoginController) googleLogin(w http.ResponseWriter, r *http.Request) {
 	log.Printf("google user session %s", config.PrettyPrint(session))
 
 	// refresh token
-	refreshToken, err := l.globalHelpers.CreateRefreshToken(mw.JwtUserData{Username: user.Username, Email: user.Email, SocialID: user.SocialID, UserId: user.UserID, Picture: user.Picture})
+	refreshToken, err := l.globalHelpers.CreateRefreshToken(mw.JwtUserData{Username: user.Username, Email: user.Email, SocialID: user.SocialID, UserID: user.UserID, Picture: user.Picture})
 	if err != nil {
 		log.Println(err)
 		http.Redirect(w, r, "http://localhost:3000/google_login/error", http.StatusSeeOther)
@@ -123,7 +123,7 @@ func (l *LoginController) facebookLogin(w http.ResponseWriter, r *http.Request) 
 	log.Printf("facebook user session %s", config.PrettyPrint(session))
 
 	// refresh token
-	refreshToken, err := l.globalHelpers.CreateRefreshToken(mw.JwtUserData{Username: user.Username, Email: user.Email, SocialID: user.SocialID, UserId: user.UserID, Picture: user.Picture})
+	refreshToken, err := l.globalHelpers.CreateRefreshToken(mw.JwtUserData{Username: user.Username, Email: user.Email, SocialID: user.SocialID, UserID: user.UserID, Picture: user.Picture})
 	if err != nil {
 		log.Println(err)
 		http.Redirect(w, r, "http://localhost:3000/google_login/error", http.StatusSeeOther)
@@ -146,31 +146,33 @@ func (l *LoginController) accessToken(w http.ResponseWriter, r *http.Request) {
 	// get refresh token
 	refreshToken, err := r.Cookie("refresh-token")
 	if err != nil {
-		config.ErrorResponse(w, "user does not have credentials, log in", http.StatusUnauthorized)
+		config.ErrorResponse(w, "user does not have credentials, log in", nil, http.StatusUnauthorized)
 		return
 	}
 
 	// create new access token
-	accessToken := l.globalHelpers.ReIssueAccessToken(refreshToken.Value, r.Context())
-	if accessToken == "" {
-		config.ErrorResponse(w, "can't create authorization token for this user", http.StatusUnauthorized)
+	accessToken, notAuthorized := l.globalHelpers.ReIssueAccessToken(refreshToken.Value, r.Context())
+	if notAuthorized {
+		config.ErrorResponse(w, "can't create authorization token for this user", nil, http.StatusUnauthorized)
 		return
 	}
 
 	// send access token
-	response := config.ClientResponse{Error: false, Message: "access token generated successfully", Data: accessToken}
+	response := config.ClientResponse{Rsp: struct {
+		AccessToken string `json:"access_token"`
+	}{AccessToken: accessToken}}
 	config.WriteResponse(w, http.StatusOK, response)
 }
 
 func (l *LoginController) logout(w http.ResponseWriter, r *http.Request) {
 
-	// TODO: change secure to true when deploying to prod
+	// TODO: change secure to true when deploying to prod ---> make the trick with .env variable
 	//logout
 	cookie := &http.Cookie{Name: "refresh-token", Value: "", MaxAge: -1, Path: "/", Domain: "localhost", Secure: false, HttpOnly: true}
 	http.SetCookie(w, cookie)
 
 	// successfull response
-	response := config.ClientResponse{Message: "Successfull logout"}
+	response := config.ClientResponse{Rsp: "Successfull logout"}
 	config.WriteResponse(w, http.StatusOK, response)
 
 }

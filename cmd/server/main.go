@@ -95,7 +95,7 @@ func buildServer(env config.EnvVariables) (srv *http.Server, err error) {
 	r.Use(middleware.Recoverer)
 	globalHelpers := mw.NewGlobalMiddlewareService(env.ACCESS_TOKEN_KEY, env.REFRESH_TOKEN_KEY, store)
 
-	// login domain
+	// auth domain
 	googleOauthService := login.NewGoogleOauthService(store, env)
 	facebookOauthService := login.NewFacebookOauthService(store, env)
 	loginController := login.NewLoginController(googleOauthService, facebookOauthService, globalHelpers)
@@ -114,7 +114,7 @@ func buildServer(env config.EnvVariables) (srv *http.Server, err error) {
 	// health route
 	r.Get("/health-check", func(w http.ResponseWriter, r *http.Request) {
 		response := config.ClientResponse{
-			Message: "server up !!!",
+			Rsp: "server up !!!",
 		}
 		config.WriteResponse(w, 200, response)
 	})

@@ -13,10 +13,11 @@ type JwtUserData struct {
 	Username string `json:"username"`
 	Email    string `json:"Email"`
 	SocialID string `json:"social_id"`
-	UserId   int64  `json:"user_id"`
+	UserID   int64  `json:"user_id"`
 	Picture  string `json:"picture"`
 }
 
+// FIXME: include this stuff in the main struct ?¿
 type JwtClaims struct {
 	UserData JwtUserData
 	jwt.RegisteredClaims
@@ -62,8 +63,9 @@ func (service *GlobalMiddlewares) CreateRefreshToken(user JwtUserData) (refreshT
 }
 
 // FIXME: test this
-func (service *GlobalMiddlewares) VerifyToken(token, key string) (*JwtClaims, bool, error) {
+func (service *GlobalMiddlewares) VerifyToken(token, key string) (*JwtClaims, error) {
 
+	// FIXME: check with key
 	// check if jwt signing method is correct and return key
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
@@ -76,59 +78,60 @@ func (service *GlobalMiddlewares) VerifyToken(token, key string) (*JwtClaims, bo
 	// parse and validate the token
 	jwtToken, err := jwt.ParseWithClaims(token, &JwtClaims{}, keyFunc)
 	if err != nil {
-		return nil, false, fmt.Errorf("error parsing token: %s", err)
+		return nil, fmt.Errorf("error parsing token: %s", err)
 	}
 
 	// check if token is valid
 	if !jwtToken.Valid {
-		return nil, false, ErrInvalidToken
+		return nil, ErrInvalidToken
 	}
 
 	// access claims
 	claims, ok := jwtToken.Claims.(*JwtClaims)
 	if !ok {
-		return nil, false, ErrInvalidToken
+		return nil, ErrInvalidToken
 	}
 
 	// check if token has expired
 	if time.Now().After(claims.ExpiresAt.Time) {
-		return nil, true, ErrExpiredToken
+		return nil, ErrExpiredToken
 	}
 
-	return claims, false, nil
+	return claims, nil
 
 }
 
 // FIXME: test this
-func (service *GlobalMiddlewares) ReIssueAccessToken(refreshToken string, ctx context.Context) string {
+func (service *GlobalMiddlewares) ReIssueAccessToken(refreshToken string, ctx context.Context) (string, bool) {
 	// decode refresh token and check it
-	refreshDecoded, refreshExpired, refreshErr := service.VerifyToken(refreshToken, service.RefreshTokenKey)
-	if refreshErr != nil {
-		return ""
+	refreshDecoded, refreshErr := service.VerifyToken(refreshToken, service.RefreshTokenKey)
+	if refreshErr == ErrInvalidToken {
+		return "", true
 	}
-	if refreshExpired {
-		return ""
+	// create new refresh token ?¿
+	if refreshErr == ErrExpiredToken {
+		return "", true
 	}
 
 	// validate session
-	session, sessionErr := service.storage.GetSession(ctx, refreshDecoded.UserData.UserId)
+	session, sessionErr := service.storage.GetSession(ctx, refreshDecoded.UserData.UserID)
 	if sessionErr != nil || !session.Valid {
-		return ""
+		return "", true
 	}
 
 	// validate user
-	user, userErr := service.storage.GetUserById(ctx, refreshDecoded.UserData.UserId)
+	user, userErr := service.storage.GetUserById(ctx, refreshDecoded.UserData.UserID)
 	if userErr != nil {
-		return ""
+		return "", true
 	}
 
 	// new access token
-	createTokenParams := JwtUserData{Picture: user.Picture, Username: user.Username, Email: user.Email, SocialID: user.SocialID, UserId: user.UserID}
+	createTokenParams := JwtUserData{Picture: user.Picture, Username: user.Username, Email: user.Email, SocialID: user.SocialID, UserID: user.UserID}
 	accessToken, accessTokenErr := service.CreateToken(createTokenParams, time.Minute*15, service.AccessTokenKey)
 	if accessTokenErr != nil {
-		return ""
+		return "", true
 	}
 
-	return accessToken
+	return accessToken, false
 
 }

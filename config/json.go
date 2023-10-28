@@ -8,9 +8,13 @@ import (
 )
 
 type ClientResponse struct {
+	Rsp any `json:"rsp"`
+}
+
+type ErrorRsp struct {
 	Error   bool   `json:"error,omitempty"`
 	Message string `json:"message,omitempty"`
-	Data    any    `json:"data,omitempty"`
+	Rsp     any    `json:"rsp,omitempty"`
 }
 
 func ReadBody(w http.ResponseWriter, r *http.Request, data any) error {
@@ -64,11 +68,12 @@ func WriteResponse(w http.ResponseWriter, status int, data any, headers ...http.
 
 }
 
-func ErrorResponse(w http.ResponseWriter, msg string, status int) error {
+func ErrorResponse(w http.ResponseWriter, msg string, data any, status int) error {
 
-	response := ClientResponse{
+	response := ErrorRsp{
 		Error:   true,
 		Message: msg,
+		Rsp:     data,
 	}
 
 	return WriteResponse(w, status, response)

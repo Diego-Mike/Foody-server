@@ -1,14 +1,33 @@
-version: "1"
-project:
-  id: ""
-packages:
-  - name: "db"
-    path: "./internal/db/sqlc"
-    queries: "./internal/db/querys/"
-    schema: "./internal/db/migrations/"
-    engine: "postgresql"
-    emit_json_tags: true
-    emit_prepared_queries: false
-    emit_interface: true
-    emit_exact_table_names: false
-    emit_empty_slices: true
+# version: "2"
+# project:
+#   id: ""
+# packages:
+#   - name: "db"
+#     path: "./internal/db/sqlc"
+#     queries: "./internal/db/querys"
+#     schema: "./internal/db/migrations"
+#     engine: "postgresql"
+#     emit_json_tags: true
+#     emit_prepared_queries: false
+#     emit_interface: true
+#     emit_exact_table_names: false
+#     emit_empty_slices: true
+
+version: "2"
+cloud:
+  project: ""
+sql:
+  - engine: "postgresql"
+    queries: "./internal/db/querys"
+    schema: "./internal/db/migrations"
+    database:
+      managed: true
+    gen:
+      go:
+        emit_interface: true
+        emit_json_tags: true
+        emit_prepared_queries: false
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        package: "db"
+        out: "./internal/db/sqlc"

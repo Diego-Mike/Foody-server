@@ -92,6 +92,7 @@ type facebookUserDataModel struct {
 	Email string `json:"email"`
 }
 
+// FIXME: how to get user data correctly, havin' problems with user profile picture
 func (service *FacebookOauthService) getFacebookUserData(facebookToken facebookTokenModel) (facebookUser facebookUserDataModel, err error) {
 
 	url := "https://graph.facebook.com/me"

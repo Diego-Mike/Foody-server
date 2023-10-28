@@ -18,12 +18,12 @@ func NewUserController(userService *UserService, globalHelpers *mw.GlobalMiddlew
 }
 
 func (u *UserController) getCurrentUser(w http.ResponseWriter, r *http.Request) {
-	currentUser := r.Context().Value(constants.UserContextKey)
-	if currentUser == nil {
-		config.ErrorResponse(w, "unauthorized to get user data", http.StatusUnauthorized)
-		return
-	}
+	currentUser := r.Context().Value(constants.UserContextKey).(mw.JwtUserData)
 
-	resp := config.ClientResponse{Error: false, Message: "successfull call", Data: currentUser}
+	resp := config.ClientResponse{Rsp: struct {
+		User mw.JwtUserData `json:"user"`
+	}{
+		User: currentUser,
+	}}
 	config.WriteResponse(w, http.StatusOK, resp)
 }
