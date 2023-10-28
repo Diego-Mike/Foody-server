@@ -24,4 +24,4 @@ go.work
 client_secret_961264807191-v1vigak9hl2t8kn6ml40v70e404qgdub.apps.googleusercontent.com.json
 .env
 Foody DB.sql
-.Makefile
+/Makefile
