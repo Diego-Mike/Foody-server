@@ -4,8 +4,8 @@ Working on 👇
 
 - Authentication
 
-  - [ ] Full oauth login/logout and authorization flow
-  - [ ] Change to only cookies + API KEY
+  - [x] Full oauth login/logout and authorization flow
+  - [x] Change to only cookies + API KEY
   - [x] google
   - [x] facebook
   - [ ] tik tok
