@@ -32,7 +32,7 @@ type facebookTokenModel struct {
 func (service *FacebookOauthService) getFacebookAccessToken(r *http.Request) (token facebookTokenModel, err error) {
 
 	facebookCode := r.URL.Query().Get("code")
-	url := "https://graph.facebook.com/v17.0/oauth/access_token"
+	url := "https://graph.facebook.com/v18.0/oauth/access_token"
 	qs := struct {
 		client_id     string
 		redirect_uri  string

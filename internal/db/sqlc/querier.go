@@ -16,6 +16,7 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	GenerateSession(ctx context.Context, arg GenerateSessionParams) (Session, error)
 	GetBusinessById(ctx context.Context, businessID int64) (Business, error)
+	GetFullUser(ctx context.Context, userID int64) (GetFullUserRow, error)
 	GetSession(ctx context.Context, userIDSession int64) (Session, error)
 	GetUserById(ctx context.Context, userID int64) (User, error)
 	GetUserBySocialId(ctx context.Context, socialID string) (User, error)

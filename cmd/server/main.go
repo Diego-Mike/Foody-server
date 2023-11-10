@@ -83,7 +83,7 @@ func buildServer(env config.EnvVariables) (srv *http.Server, err error) {
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://*", "https://*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-type", "X-CSRF-Token"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-type", "X-CSRF-Token", "foody-api-key"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
 	}))
@@ -93,12 +93,13 @@ func buildServer(env config.EnvVariables) (srv *http.Server, err error) {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	globalHelpers := mw.NewGlobalMiddlewareService(env.ACCESS_TOKEN_KEY, env.REFRESH_TOKEN_KEY, store)
+	globalHelpers := mw.NewGlobalMiddlewareService(env.ACCESS_TOKEN_KEY, env.ACCESS_TOKEN_TIME, env.REFRESH_TOKEN_KEY, env.REFRESH_TOKEN_TIME, env.API_KEY, env.SECURE_COOKIES, store)
 
 	// auth domain
+	loginService := login.NewLoginService(store, env)
 	googleOauthService := login.NewGoogleOauthService(store, env)
 	facebookOauthService := login.NewFacebookOauthService(store, env)
-	loginController := login.NewLoginController(googleOauthService, facebookOauthService, globalHelpers)
+	loginController := login.NewLoginController(googleOauthService, facebookOauthService, loginService, globalHelpers)
 	login.AddLoginRoutes(r, loginController)
 
 	// users domain

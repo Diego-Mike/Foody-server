@@ -2,6 +2,7 @@ package mw
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strings"
 
@@ -11,37 +12,52 @@ import (
 )
 
 type GlobalMiddlewares struct {
-	AccessTokenKey  string
-	RefreshTokenKey string
-	storage         *db.SQLCStore
+	AccessTokenKey   string
+	AccessTokenTime  string
+	RefreshTokenKey  string
+	RefreshTokenTime string
+	ApiKey           string
+	SecureCookies    string
+	storage          *db.SQLCStore
 }
 
-func NewGlobalMiddlewareService(accessTokenKey, refreshTokenKey string, storage *db.SQLCStore) *GlobalMiddlewares {
-	return &GlobalMiddlewares{storage: storage, AccessTokenKey: accessTokenKey, RefreshTokenKey: refreshTokenKey}
+func NewGlobalMiddlewareService(accessTokenKey, accessTokenTime, refreshTokenKey, refreshTokenTime, apiKey, secureCookies string, storage *db.SQLCStore) *GlobalMiddlewares {
+	return &GlobalMiddlewares{storage: storage, AccessTokenKey: accessTokenKey, AccessTokenTime: accessTokenTime, RefreshTokenKey: refreshTokenKey, RefreshTokenTime: refreshTokenTime, SecureCookies: secureCookies, ApiKey: apiKey}
 }
 
-// FIXME: return message if user does not have access
 func (service *GlobalMiddlewares) IdentifyUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// get access token and refresh token
-		getAccessToken := strings.Split(r.Header.Get("Authorization"), "Bearer")
-		if len(getAccessToken) < 2 {
+
+		// get api key
+		apiKey := r.Header.Get("foody-api-key")
+		if (apiKey == "") || (apiKey != service.ApiKey) {
 			config.ErrorResponse(w, "entidad no autorizada para hacer esta petición", nil, http.StatusUnauthorized)
 			return
 		}
-		accessToken := strings.TrimSpace(getAccessToken[1])
+		// log.Println("api key", apiKey)
+
+		// get access token and refresh token
+		accessTokenByCookie, accessTokenErr := r.Cookie("access-token")
+		if accessTokenErr != nil {
+			log.Println("no access token", accessTokenErr)
+			config.ErrorResponse(w, "entidad no autorizada para hacer esta petición", nil, http.StatusUnauthorized)
+			return
+		}
+		// log.Println("access token", accessTokenByCookie.Value)
 
 		refreshTokenByCookie, refreshTokenErr := r.Cookie("refresh-token") // get refresh token
 		if refreshTokenErr != nil {
-			next.ServeHTTP(w, r)
+			log.Println("no refresh token", refreshTokenErr)
+			config.ErrorResponse(w, "entidad no autorizada para hacer esta petición", nil, http.StatusUnauthorized)
 			return
 		}
 
-		accessTokenDecoded, tokenErr := service.VerifyToken(accessToken, service.AccessTokenKey) // decode access token
+		accessTokenDecoded, tokenErr := service.VerifyToken(accessTokenByCookie.Value, service.AccessTokenKey) // decode access token
 		if tokenErr == ErrInvalidToken {
 			config.ErrorResponse(w, "entidad no autorizada para hacer esta petición", nil, http.StatusUnauthorized)
 			return
 		}
+		// log.Println("we got here", accessTokenDecoded)
 		if accessTokenDecoded != nil {
 			ctx := context.WithValue(r.Context(), constants.UserContextKey, accessTokenDecoded.UserData) // add user data to context (so we can access it)
 			next.ServeHTTP(w, r.WithContext(ctx))                                                        // pass data to next middleware/handler
@@ -49,18 +65,15 @@ func (service *GlobalMiddlewares) IdentifyUser(next http.Handler) http.Handler {
 		}
 
 		// create new access token
-		if (tokenErr == ErrExpiredToken) && (refreshTokenByCookie.Value != "") {
-			newAccessToken, notAuthorized := service.ReIssueAccessToken(refreshTokenByCookie.Value, r.Context())
+		if (strings.Contains(tokenErr.Error(), "token is expired")) && (refreshTokenByCookie.Value != "") {
+			// TODO: update refresh token as well
+			newAccessToken, notAuthorized := service.ReIssueAccessToken(w, refreshTokenByCookie.Value, r.Context())
 
 			if notAuthorized {
+				// log.Println("we got here")
 				config.ErrorResponse(w, "entidad no autorizada para hacer esta petición", nil, http.StatusUnauthorized)
 				return
 			}
-
-			// FIXME: change to secure to true in prod
-			// FIXME: how long should the cookie for access token and refresh token be
-			// TODO: change cookies to right time in prod, leave this when developing
-			http.SetCookie(w, &http.Cookie{Name: "AccessToken", Value: newAccessToken, Path: "/", Domain: "localhost", MaxAge: 900, HttpOnly: true, Secure: false}) // 15min
 
 			decodedAccessToken, _ := service.VerifyToken(newAccessToken, service.AccessTokenKey)
 			ctx := context.WithValue(r.Context(), constants.UserContextKey, decodedAccessToken.UserData)
@@ -68,7 +81,8 @@ func (service *GlobalMiddlewares) IdentifyUser(next http.Handler) http.Handler {
 			return
 		}
 
-		next.ServeHTTP(w, r)
+		// return error
+		config.ErrorResponse(w, "entidad no autorizada para hacer esta petición", nil, http.StatusUnauthorized)
 	})
 
 }

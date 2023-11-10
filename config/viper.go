@@ -18,8 +18,12 @@ type EnvVariables struct {
 	FACEBOOK_CLIENT_ID     string `mapstructure:"FACEBOOK_CLIENT_ID"`
 	FACEBOOK_CLIENT_SECRET string `mapstructure:"FACEBOOK_CLIENT_SECRET"`
 	FACEBOOK_REDIRECT_URI  string `mapstructure:"FACEBOOK_REDIRECT_URI"`
-	ACCESS_TOKEN_KEY       string `mapstructure:"ACCESS_TOKEN_KEY"`
 	REFRESH_TOKEN_KEY      string `mapstructure:"REFRESH_TOKEN_KEY"`
+	REFRESH_TOKEN_TIME     string `mapstructure:"REFRESH_TOKEN_TIME"`
+	ACCESS_TOKEN_KEY       string `mapstructure:"ACCESS_TOKEN_KEY"`
+	ACCESS_TOKEN_TIME      string `mapstructure:"ACCESS_TOKEN_TIME"`
+	API_KEY                string `mapstructure:"API_KEY"`
+	SECURE_COOKIES         string `mapstructure:"SECURE_COOKIES"`
 }
 
 func LoadEnv(path string) (config EnvVariables, err error) {
@@ -96,6 +100,18 @@ func LoadEnv(path string) (config EnvVariables, err error) {
 	if config.REFRESH_TOKEN_KEY == "" {
 		err = errors.New("env REFRESH_TOKEN_KEY must be provided to complete auth flow")
 		return
+	}
+
+	if config.API_KEY == "" {
+		err = errors.New("env API_KEY must be provided to complete auth flow")
+	}
+
+	if config.ACCESS_TOKEN_TIME == "" {
+		err = errors.New("env ACCESS_TOKEN_TIME must be provided to complete auth flow")
+	}
+
+	if config.REFRESH_TOKEN_TIME == "" {
+		err = errors.New("env REFRESH_TOKEN_TIME must be provided to complete auth flow")
 	}
 
 	return

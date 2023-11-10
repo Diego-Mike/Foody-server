@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -34,7 +38,7 @@ func (service *GlobalMiddlewares) CreateToken(userData JwtUserData, duration tim
 	tokenDuration := jwt.NewNumericDate(time.Now().Add(duration)) // how long will the token live
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, JwtClaims{UserData: userData, RegisteredClaims: jwt.RegisteredClaims{
-		Issuer:    "Foody users service",
+		Issuer:    "Foody servers",
 		ExpiresAt: tokenDuration,
 	}})
 
@@ -48,24 +52,26 @@ func (service *GlobalMiddlewares) CreateToken(userData JwtUserData, duration tim
 
 }
 
-// this should be global
-func (service *GlobalMiddlewares) CreateRefreshToken(user JwtUserData) (refreshToken string, err error) {
+func (service *GlobalMiddlewares) CreateRefreshOrAccessToken(w http.ResponseWriter, jwtData JwtUserData, expiryTime, tokenKey, cookieName string) (string, error) {
 
-	// refresh token TODO: should this token expire at all ? should it last forever ?
-	refreshTokenDuration := time.Hour * 2 // 1 month
-	refreshToken, refreshTokenErr := service.CreateToken(user, refreshTokenDuration, service.RefreshTokenKey)
-	if refreshTokenErr != nil {
-		err = fmt.Errorf("there was a problem signing refresh token ----> %s", refreshTokenErr)
-		return
+	secureCookies, _ := strconv.ParseBool(service.SecureCookies)
+	tokenExpiryTime, _ := strconv.Atoi(expiryTime)
+
+	tokenDuration := time.Second * time.Duration(tokenExpiryTime)
+	newToken, newTokenErr := service.CreateToken(jwtData, tokenDuration, tokenKey)
+	if newTokenErr != nil {
+		err := fmt.Errorf("there was a problem signing refresh token ----> %s", newTokenErr)
+		return "", err
 	}
 
-	return
+	http.SetCookie(w, &http.Cookie{Name: cookieName, Value: newToken, Path: "/", Domain: "localhost", MaxAge: tokenExpiryTime, HttpOnly: true, Secure: secureCookies})
+
+	return newToken, nil
 }
 
 // FIXME: test this
 func (service *GlobalMiddlewares) VerifyToken(token, key string) (*JwtClaims, error) {
 
-	// FIXME: check with key
 	// check if jwt signing method is correct and return key
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
@@ -77,6 +83,7 @@ func (service *GlobalMiddlewares) VerifyToken(token, key string) (*JwtClaims, er
 
 	// parse and validate the token
 	jwtToken, err := jwt.ParseWithClaims(token, &JwtClaims{}, keyFunc)
+	// log.Println("DAMN", config.PrettyPrint(jwtToken))
 	if err != nil {
 		return nil, fmt.Errorf("error parsing token: %s", err)
 	}
@@ -102,14 +109,17 @@ func (service *GlobalMiddlewares) VerifyToken(token, key string) (*JwtClaims, er
 }
 
 // FIXME: test this
-func (service *GlobalMiddlewares) ReIssueAccessToken(refreshToken string, ctx context.Context) (string, bool) {
+func (service *GlobalMiddlewares) ReIssueAccessToken(w http.ResponseWriter, refreshToken string, ctx context.Context) (string, bool) {
+
 	// decode refresh token and check it
 	refreshDecoded, refreshErr := service.VerifyToken(refreshToken, service.RefreshTokenKey)
-	if refreshErr == ErrInvalidToken {
-		return "", true
-	}
-	// create new refresh token ?¿
-	if refreshErr == ErrExpiredToken {
+	if refreshErr != nil {
+		// create new refresh token ?¿
+		if strings.Contains(refreshErr.Error(), "token is expired") {
+			log.Println("refresh token has expired")
+			return "", true
+		}
+		log.Println("problem with refresh token", refreshErr)
 		return "", true
 	}
 
@@ -127,7 +137,8 @@ func (service *GlobalMiddlewares) ReIssueAccessToken(refreshToken string, ctx co
 
 	// new access token
 	createTokenParams := JwtUserData{Picture: user.Picture, Username: user.Username, Email: user.Email, SocialID: user.SocialID, UserID: user.UserID}
-	accessToken, accessTokenErr := service.CreateToken(createTokenParams, time.Minute*15, service.AccessTokenKey)
+	accessToken, accessTokenErr := service.CreateRefreshOrAccessToken(w, createTokenParams, service.AccessTokenTime, service.AccessTokenKey, "access-token")
+
 	if accessTokenErr != nil {
 		return "", true
 	}

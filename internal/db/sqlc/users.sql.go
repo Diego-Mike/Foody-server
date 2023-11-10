@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createUser = `-- name: CreateUser :one
@@ -38,6 +39,36 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Picture,
 		&i.Provider,
 		&i.RegisteredAt,
+	)
+	return i, err
+}
+
+const getFullUser = `-- name: GetFullUser :one
+SELECT u.user_id, u.social_id, u.username, u.email, u.picture, bm.business_id, bm.business_position FROM users u 
+LEFT JOIN business_members bm ON u.user_id  = bm.user_id WHERE u.user_id = $1
+`
+
+type GetFullUserRow struct {
+	UserID           int64          `json:"user_id"`
+	SocialID         string         `json:"social_id"`
+	Username         string         `json:"username"`
+	Email            string         `json:"email"`
+	Picture          string         `json:"picture"`
+	BusinessID       sql.NullInt64  `json:"business_id"`
+	BusinessPosition sql.NullString `json:"business_position"`
+}
+
+func (q *Queries) GetFullUser(ctx context.Context, userID int64) (GetFullUserRow, error) {
+	row := q.db.QueryRowContext(ctx, getFullUser, userID)
+	var i GetFullUserRow
+	err := row.Scan(
+		&i.UserID,
+		&i.SocialID,
+		&i.Username,
+		&i.Email,
+		&i.Picture,
+		&i.BusinessID,
+		&i.BusinessPosition,
 	)
 	return i, err
 }

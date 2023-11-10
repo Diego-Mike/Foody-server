@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/Foody-App-Tech/Main-server/config"
 	"github.com/Foody-App-Tech/Main-server/internal/constants"
@@ -13,18 +12,18 @@ import (
 )
 
 type createNewBusinessRequest struct {
-	Name             string      `json:"name" validate:"required,max=30"`
-	City             string      `json:"city" validate:"required,max=50"`
-	Address          string      `json:"address" validate:"required,max=100"`
-	Latitude         string      `json:"latitude" validate:"required,max=100"`
-	Longitude        string      `json:"longitude" validate:"required,max=100"`
-	Presentation     string      `json:"presentation" validate:"required,max=300"`
-	ClientsMaxAmount int16       `json:"clients_max_amount" validate:"omitempty,min=0"`
-	DaysOfWeek       []int16     `json:"days_of_week" validate:"dive,required,numeric,min=1,max=7"`
-	OpeningHours     []time.Time `json:"opening_hours" validate:"dive,required,"`
-	ClosingHours     []time.Time `json:"closing_hours"`
-	UserID           int64       `json:"user_id" validate:"required,min=1"`
-	BusinessPosition string      `json:"business_position" validate:"required,oneof=Dueño Administrador Empleado"`
+	Name             string  `json:"name" validate:"required,max=30"`
+	City             string  `json:"city" validate:"required,max=50"`
+	Address          string  `json:"address" validate:"required,max=100"`
+	Latitude         string  `json:"latitude" validate:"required,max=100"`
+	Longitude        string  `json:"longitude" validate:"required,max=100"`
+	Presentation     string  `json:"presentation" validate:"required,max=300"`
+	ClientsMaxAmount int16   `json:"clients_max_amount" validate:"omitempty,min=0"`
+	DaysOfWeek       []int16 `json:"days_of_week" validate:"dive,required,numeric,min=1,max=7"`
+	// OpeningHours     []time.Time `json:"opening_hours" validate:"dive,required,"`
+	// ClosingHours     []time.Time `json:"closing_hours"`
+	UserID           int64  `json:"user_id" validate:"required,min=1"`
+	BusinessPosition string `json:"business_position" validate:"required,oneof=Dueño Administrador Empleado"`
 }
 
 func checkNewBusinessPayload(next http.Handler) http.Handler {
@@ -142,7 +141,7 @@ type createFoodPayload struct {
 	FoodTitle           string `json:"food_title" validate:"required,max=55"`
 	FoodDescription     string `json:"food_description" validate:"omitempty,max=150"`
 	FoodPrice           int64  `json:"food_price" validate:"required,gt=0"`
-	FoodAvailablePerDay int16  `json:"food_available_per_day" validate:"omitempty,min=1"`
+	FoodAvailablePerDay int16  `json:"food_available_per_day" validate:"omitempty,gt=0"`
 }
 
 type createFoodRequest struct {

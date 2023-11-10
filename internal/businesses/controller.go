@@ -122,6 +122,7 @@ type newFoodRsp struct {
 
 func (c *BusinessesController) createFood(w http.ResponseWriter, r *http.Request) {
 
+	// TODO: check if member is allowed to do this
 	newFood, statusCode, err := c.businessesService.createNewBusinessFood(r)
 	if err != nil {
 		config.ErrorResponse(w, err.Error(), nil, statusCode)
