@@ -86,3 +86,18 @@ func (service *GlobalMiddlewares) IdentifyUser(next http.Handler) http.Handler {
 	})
 
 }
+
+func (service *GlobalMiddlewares) SimpleIdentification(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		// api key
+		apiKey := r.Header.Get("foody-api-key")
+		if (apiKey == "") || (apiKey != service.ApiKey) {
+			config.ErrorResponse(w, "entidad no autorizada para hacer esta petición", nil, http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+
+	})
+}

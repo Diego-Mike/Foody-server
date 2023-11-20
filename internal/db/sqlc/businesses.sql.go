@@ -8,9 +8,6 @@ package db
 import (
 	"context"
 	"database/sql"
-	"time"
-
-	"github.com/lib/pq"
 )
 
 const addBusinessMember = `-- name: AddBusinessMember :one
@@ -29,24 +26,6 @@ func (q *Queries) AddBusinessMember(ctx context.Context, arg AddBusinessMemberPa
 	var user_id int64
 	err := row.Scan(&user_id)
 	return user_id, err
-}
-
-const addBusinessSchedule = `-- name: AddBusinessSchedule :execrows
-INSERT INTO business_schedule (day_of_week, opening_hour, closing_hour) VALUES (UNNEST($1::smallint[]), UNNEST($2::time[]), UNNEST($3::time[]))
-`
-
-type AddBusinessScheduleParams struct {
-	DaysOfWeek   []int16     `json:"days_of_week"`
-	OpeningHours []time.Time `json:"opening_hours"`
-	ClosingHours []time.Time `json:"closing_hours"`
-}
-
-func (q *Queries) AddBusinessSchedule(ctx context.Context, arg AddBusinessScheduleParams) (int64, error) {
-	result, err := q.db.ExecContext(ctx, addBusinessSchedule, pq.Array(arg.DaysOfWeek), pq.Array(arg.OpeningHours), pq.Array(arg.ClosingHours))
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected()
 }
 
 const createBusiness = `-- name: CreateBusiness :one
@@ -108,4 +87,81 @@ func (q *Queries) GetBusinessById(ctx context.Context, businessID int64) (Busine
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const getHomeBusinessFood = `-- name: GetHomeBusinessFood :many
+SELECT b.business_id, b."name", b.city, bf.food_id, bf.food_title, bf.food_description, bf.food_price, bf.food_available_per_day, 
+bf.food_img FROM businesses b 
+INNER JOIN lateral (
+    SELECT bf.food_id, bf.food_title, bf.food_description, bf.food_price, bf.food_available_per_day, bf.food_img FROM business_food bf 
+    where b.business_id = bf.business_id 
+    ORDER BY bf.created_at DESC
+    LIMIT 3
+) bf ON true
+WHERE b.business_id >= $1::bigint
+LIMIT $2::bigint
+`
+
+type GetHomeBusinessFoodParams struct {
+	AfterBusiness int64 `json:"after_business"`
+	PageSize      int64 `json:"page_size"`
+}
+
+type GetHomeBusinessFoodRow struct {
+	BusinessID          int64          `json:"business_id"`
+	Name                string         `json:"name"`
+	City                string         `json:"city"`
+	FoodID              int64          `json:"food_id"`
+	FoodTitle           string         `json:"food_title"`
+	FoodDescription     sql.NullString `json:"food_description"`
+	FoodPrice           int64          `json:"food_price"`
+	FoodAvailablePerDay sql.NullInt16  `json:"food_available_per_day"`
+	FoodImg             string         `json:"food_img"`
+}
+
+func (q *Queries) GetHomeBusinessFood(ctx context.Context, arg GetHomeBusinessFoodParams) ([]GetHomeBusinessFoodRow, error) {
+	rows, err := q.db.QueryContext(ctx, getHomeBusinessFood, arg.AfterBusiness, arg.PageSize)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetHomeBusinessFoodRow{}
+	for rows.Next() {
+		var i GetHomeBusinessFoodRow
+		if err := rows.Scan(
+			&i.BusinessID,
+			&i.Name,
+			&i.City,
+			&i.FoodID,
+			&i.FoodTitle,
+			&i.FoodDescription,
+			&i.FoodPrice,
+			&i.FoodAvailablePerDay,
+			&i.FoodImg,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getNextHomePage = `-- name: GetNextHomePage :one
+SELECT b.business_id from businesses b 
+RIGHT JOIN business_food bf ON b.business_id = bf.business_id
+WHERE b.business_id > $1 
+LIMIT 1
+`
+
+func (q *Queries) GetNextHomePage(ctx context.Context, businessID int64) (sql.NullInt64, error) {
+	row := q.db.QueryRowContext(ctx, getNextHomePage, businessID)
+	var business_id sql.NullInt64
+	err := row.Scan(&business_id)
+	return business_id, err
 }

@@ -28,6 +28,7 @@ type FullUserRsp struct {
 	Picture          string `json:"picture"`
 	BusinessID       int64  `json:"business_id,omitempty"`
 	BusinessPosition string `json:"business_position,omitempty"`
+	IsBusinessMember bool   `json:"is_business_member"`
 }
 
 func (u *UserController) getCurrentUser(w http.ResponseWriter, r *http.Request) {
@@ -57,6 +58,7 @@ func (u *UserController) getCurrentUser(w http.ResponseWriter, r *http.Request) 
 	if fullUser.BusinessPosition.Valid && fullUser.BusinessID.Valid {
 		user.BusinessPosition = fullUser.BusinessPosition.String
 		user.BusinessID = fullUser.BusinessID.Int64
+		user.IsBusinessMember = true
 	}
 
 	resp := config.ClientResponse{Rsp: struct {

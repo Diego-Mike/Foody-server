@@ -28,6 +28,55 @@ func NewBusinessesService(storage db.Store, env config.EnvVariables) *Businesses
 }
 
 // TODO: test services functions
+
+func (service *BusinessesService) getFood(r *http.Request) ([]businessHomeFood, string, error) {
+	payload := r.Context().Value(constants.RequestPayloadKey).(getBusinessHomeFoodRequest)
+
+	arg := db.GetHomeBusinessFoodParams{
+		AfterBusiness: payload.AfterBusiness,
+		PageSize:      payload.PageSize,
+	}
+
+	homeFood, err := service.storage.GetHomeBusinessFood(r.Context(), arg)
+	if err != nil {
+		return nil, "Problemas obteniendo la información !", err
+	}
+
+	prettifyCash := message.NewPrinter(language.English)
+	var homeFoodRestructured []businessHomeFood
+	for _, v := range homeFood {
+		prettyCash := prettifyCash.Sprintf("%d", v.FoodPrice)
+		food := Food{
+			FoodID: v.FoodID, FoodTitle: v.FoodTitle, FoodDescription: v.FoodDescription.String, FoodPrice: prettyCash, FoodAvailablePerDay: v.FoodAvailablePerDay.Int16, FoodImg: v.FoodImg,
+		}
+
+		if len(homeFoodRestructured) == 0 {
+			homeFoodRestructured = append(homeFoodRestructured, businessHomeFood{BusinessID: v.BusinessID, Name: v.Name, City: v.City,
+				Foods: []Food{food}})
+			continue
+		}
+
+		for i, v2 := range homeFoodRestructured {
+			// add food to business
+			if v2.BusinessID == v.BusinessID {
+				homeFoodRestructured[i].Foods = append(homeFoodRestructured[i].Foods, food)
+				break
+			} else if len(homeFoodRestructured) == (i + 1) {
+				// add new business + first food
+				homeFoodRestructured = append(homeFoodRestructured, businessHomeFood{BusinessID: v.BusinessID, Name: v.Name, City: v.City,
+					Foods: []Food{food}})
+				break
+			} else {
+				continue
+
+			}
+		}
+	}
+
+	return homeFoodRestructured, "", nil
+
+}
+
 func (service *BusinessesService) createNewBusiness(r *http.Request) (db.CreateNewBusinessTxResult, error) {
 	userReq := r.Context().Value(constants.UserContextKey).(mw.JwtUserData)
 	payload := r.Context().Value(constants.RequestPayloadKey).(createNewBusinessRequest)
@@ -45,9 +94,8 @@ func (service *BusinessesService) createNewBusiness(r *http.Request) (db.CreateN
 				Valid: true,
 			},
 		},
-		AddBusinessScheduleParams: db.AddBusinessScheduleParams{},
-		UserID:                    userReq.UserID,
-		BusinessPosition:          payload.BusinessPosition,
+		UserID:           userReq.UserID,
+		BusinessPosition: payload.BusinessPosition,
 	}
 
 	createdBusiness, err := service.storage.CreateNewBusinessTx(r.Context(), arg)
@@ -120,7 +168,6 @@ func (service *BusinessesService) createNewBusinessFood(r *http.Request) (newFoo
 	prettyCash := prettifyCash.Sprintf("%d", newFood.FoodPrice)
 
 	return newFoodRsp{
-		BusinessID:          newFood.BusinessID,
 		FoodID:              newFood.FoodID,
 		FoodImg:             newFood.FoodImg,
 		FoodTitle:           newFood.FoodTitle,

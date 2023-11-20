@@ -13,8 +13,6 @@ import (
 	mw "github.com/Foody-App-Tech/Main-server/internal/global_middlewares"
 )
 
-// FIXME: if db is down, return 503 not 500
-
 type BusinessesController struct {
 	businessesService *BusinessesService
 	globalHelpers     *mw.GlobalMiddlewares
@@ -25,6 +23,54 @@ func NewBusinessesController(businessesService *BusinessesService, globalHelpers
 		businessesService: businessesService,
 		globalHelpers:     globalHelpers,
 	}
+}
+
+type Food struct {
+	FoodID              int64  `json:"food_id"`
+	FoodTitle           string `json:"food_title"`
+	FoodDescription     string `json:"food_description"`
+	FoodPrice           string `json:"food_price"`
+	FoodAvailablePerDay int16  `json:"food_available_per_day"`
+	FoodImg             string `json:"food_img"`
+}
+
+type businessHomeFood struct {
+	BusinessID int64  `json:"business_id"`
+	Name       string `json:"name"`
+	City       string `json:"city"`
+	Foods      []Food `json:"foods"`
+}
+
+type homeFoodRsp struct {
+	HomeFood []businessHomeFood `json:"home_food"`
+	NextPage int64              `json:"next_page"`
+}
+
+func (c *BusinessesController) getBusinessHomeFood(w http.ResponseWriter, r *http.Request) {
+
+	homeFoodRestructured, msgErr, dbErr := c.businessesService.getFood(r)
+	if dbErr != nil {
+		config.ErrorResponse(w, msgErr, dbErr, http.StatusServiceUnavailable)
+		return
+	}
+	// log.Println("home food re structure", config.PrettyPrint(homeFoodRestructured))
+
+	var lastBusinessId int64
+	if len(homeFoodRestructured) > 0 {
+		lastBusinessId = homeFoodRestructured[len(homeFoodRestructured)-1].BusinessID
+	}
+	nextPage, err := c.businessesService.storage.GetNextHomePage(r.Context(), lastBusinessId)
+	if err != nil && err != sql.ErrNoRows {
+		log.Println("problem gettin next page for home", err)
+		config.ErrorResponse(w, "Problemas al obtener la siguiente pagina !", err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+
+	rsp := config.ClientResponse{
+		Rsp: homeFoodRsp{HomeFood: homeFoodRestructured, NextPage: nextPage.Int64},
+	}
+	config.WriteResponse(w, http.StatusOK, rsp)
+
 }
 
 // FIXME: should we test this
@@ -111,7 +157,6 @@ func (c *BusinessesController) getBusinessById(w http.ResponseWriter, r *http.Re
 }
 
 type newFoodRsp struct {
-	BusinessID          int64  `json:"business_id"`
 	FoodID              int64  `json:"food_id"`
 	FoodImg             string `json:"food_img"`
 	FoodTitle           string `json:"food_title"`

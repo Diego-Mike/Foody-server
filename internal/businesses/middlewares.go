@@ -9,7 +9,36 @@ import (
 	"github.com/Foody-App-Tech/Main-server/config"
 	"github.com/Foody-App-Tech/Main-server/internal/constants"
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/schema"
 )
+
+var queryDecoder = schema.NewDecoder()
+
+type getBusinessHomeFoodRequest struct {
+	PageSize      int64 `validate:"gt=0,required"`
+	AfterBusiness int64 `validate:"gt=-1,numeric"`
+}
+
+func checkGetBusinessHomeFoodPayload(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// payload
+		var reqPayload getBusinessHomeFoodRequest
+		err := queryDecoder.Decode(&reqPayload, r.URL.Query())
+		if err != nil {
+			config.ErrorResponse(w, "Hubo un problema leyendo los parametros de la petición", err, http.StatusBadRequest)
+			return
+		}
+
+		payloadValidationErr := config.ValidateData(reqPayload)
+		if payloadValidationErr != nil {
+			config.ErrorResponse(w, "Hubo un problema leyendo los parametros de la petición", payloadValidationErr, http.StatusBadRequest)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), constants.RequestPayloadKey, reqPayload)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
 
 type createNewBusinessRequest struct {
 	Name             string  `json:"name" validate:"required,max=30"`
@@ -20,10 +49,8 @@ type createNewBusinessRequest struct {
 	Presentation     string  `json:"presentation" validate:"required,max=300"`
 	ClientsMaxAmount int16   `json:"clients_max_amount" validate:"omitempty,min=0"`
 	DaysOfWeek       []int16 `json:"days_of_week" validate:"dive,required,numeric,min=1,max=7"`
-	// OpeningHours     []time.Time `json:"opening_hours" validate:"dive,required,"`
-	// ClosingHours     []time.Time `json:"closing_hours"`
-	UserID           int64  `json:"user_id" validate:"required,min=1"`
-	BusinessPosition string `json:"business_position" validate:"required,oneof=Dueño Administrador Empleado"`
+	UserID           int64   `json:"user_id" validate:"required,min=1"`
+	BusinessPosition string  `json:"business_position" validate:"required,oneof=Dueño Administrador Empleado"`
 }
 
 func checkNewBusinessPayload(next http.Handler) http.Handler {

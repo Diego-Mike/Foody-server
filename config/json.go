@@ -39,9 +39,9 @@ func ReadBody(w http.ResponseWriter, r *http.Request, data any) error {
 	return nil
 }
 
-// func ReadQuery(w http.ResponseWriter, r *http.Request, data any) error {
-
-// }
+func ReadQuery(w http.ResponseWriter, r *http.Request, data any) error {
+	return nil
+}
 
 func WriteResponse(w http.ResponseWriter, status int, data any, headers ...http.Header) error {
 	out, err := json.Marshal(data)

@@ -42,7 +42,6 @@ func (store *SQLCStore) execTx(ctx context.Context, fn func(*Queries) error) err
 
 type CreateNewBusinessTxParams struct {
 	CreateBusinessParams
-	AddBusinessScheduleParams
 	UserID           int64  `json:"user_id"`
 	BusinessPosition string `json:"business_position"`
 }
@@ -63,11 +62,6 @@ func (store *SQLCStore) CreateNewBusinessTx(ctx context.Context, arg CreateNewBu
 			return err
 		}
 		result.BusinessId = newBusiness.BusinessID
-
-		_, err = q.AddBusinessSchedule(ctx, arg.AddBusinessScheduleParams)
-		if err != nil {
-			return err
-		}
 
 		_, err = q.AddBusinessMember(ctx, AddBusinessMemberParams{BusinessID: newBusiness.BusinessID, UserID: arg.UserID, BusinessPosition: arg.BusinessPosition})
 		if err != nil {

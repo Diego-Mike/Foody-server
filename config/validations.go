@@ -10,7 +10,6 @@ type CustomValidationError struct {
 }
 
 // fn for custom message when validating data
-// FIXME: add gt tag custom message
 func msgForTag(fe validator.FieldError) string {
 	switch fe.Tag() {
 	case "required":

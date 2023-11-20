@@ -6,17 +6,19 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 type Querier interface {
 	AddBusinessMember(ctx context.Context, arg AddBusinessMemberParams) (int64, error)
-	AddBusinessSchedule(ctx context.Context, arg AddBusinessScheduleParams) (int64, error)
 	CreateBusiness(ctx context.Context, arg CreateBusinessParams) (Business, error)
 	CreateNewFood(ctx context.Context, arg CreateNewFoodParams) (BusinessFood, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	GenerateSession(ctx context.Context, arg GenerateSessionParams) (Session, error)
 	GetBusinessById(ctx context.Context, businessID int64) (Business, error)
 	GetFullUser(ctx context.Context, userID int64) (GetFullUserRow, error)
+	GetHomeBusinessFood(ctx context.Context, arg GetHomeBusinessFoodParams) ([]GetHomeBusinessFoodRow, error)
+	GetNextHomePage(ctx context.Context, businessID int64) (sql.NullInt64, error)
 	GetSession(ctx context.Context, userIDSession int64) (Session, error)
 	GetUserById(ctx context.Context, userID int64) (User, error)
 	GetUserBySocialId(ctx context.Context, socialID string) (User, error)
