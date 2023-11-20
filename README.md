@@ -15,8 +15,8 @@ Working on 👇
 
 - Businesses operations
 
-  - [ ] Create a business
-  - [ ] Add food to your business
+  - [x] Create a business
+  - [x] Add food to your business
   - [ ] Add business members ?¿
   - [ ] How to track reservation status
 
@@ -24,7 +24,7 @@ Working on 👇
 
 * User experience
 
-  - [ ] Fetch random food from business
+  - [x] Fetch random food from business
   - [ ] Reserve food
   - [ ] Whatch Reservation status
   - [ ] Write reviews
