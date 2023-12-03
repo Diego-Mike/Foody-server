@@ -10,6 +10,7 @@ import (
 type Store interface {
 	Querier
 	CreateNewBusinessTx(ctx context.Context, arg CreateNewBusinessTxParams) (CreateNewBusinessTxResult, error)
+	ExecTx(ctx context.Context, fn func(*Queries) error) error
 }
 
 type SQLCStore struct {
@@ -23,7 +24,7 @@ func NewStore(db *sql.DB) *SQLCStore {
 }
 
 // execTX executes a function that implements transaction in the database
-func (store *SQLCStore) execTx(ctx context.Context, fn func(*Queries) error) error {
+func (store *SQLCStore) ExecTx(ctx context.Context, fn func(*Queries) error) error {
 	tx, err := store.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -33,7 +34,7 @@ func (store *SQLCStore) execTx(ctx context.Context, fn func(*Queries) error) err
 	err = fn(q)
 	if err != nil {
 		if rbErr := tx.Rollback(); rbErr != nil {
-			return fmt.Errorf("tx err: %v, rb err: %v", err, rbErr)
+			return fmt.Errorf("error de transacción: %v, rb err: %v", err, rbErr)
 		}
 	}
 
@@ -50,11 +51,11 @@ type CreateNewBusinessTxResult struct {
 	BusinessId int64 `json:"business_id"`
 }
 
-// TransferTx
+// CreateNewBusinessTx
 func (store *SQLCStore) CreateNewBusinessTx(ctx context.Context, arg CreateNewBusinessTxParams) (CreateNewBusinessTxResult, error) {
 	var result CreateNewBusinessTxResult
 
-	err := store.execTx(ctx, func(q *Queries) error {
+	err := store.ExecTx(ctx, func(q *Queries) error {
 		var err error
 
 		newBusiness, err := q.CreateBusiness(ctx, arg.CreateBusinessParams)

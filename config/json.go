@@ -5,7 +5,26 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"time"
 )
+
+type CustomTime struct {
+	time.Time
+}
+
+func (m *CustomTime) UnmarshalJSON(data []byte) error {
+
+	if string(data) == "null" || string(data) == "" {
+		return nil
+	}
+
+	t, err := time.Parse(`"`+time.RFC3339+`"`, string(data))
+
+	*m = CustomTime{t}
+
+	return err
+
+}
 
 type ClientResponse struct {
 	Rsp any `json:"rsp"`

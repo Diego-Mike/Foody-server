@@ -28,3 +28,24 @@ func getBusinessId(r *http.Request) (businessIdParameter, error) {
 
 	return paramToStruct, nil
 }
+
+type reservationIdParameter struct {
+	ReservationID int64 `json:"reservation_id" validate:"required,min=1"`
+}
+
+func getReservationId(r *http.Request) (reservationIdParameter, error) {
+	getReservationId := chi.URLParam(r, "reservation-id")
+
+	if getReservationId == "" {
+		return reservationIdParameter{}, errors.New("id de la reservacion no es correcto")
+	}
+	reservationId, err := strconv.ParseInt(getReservationId, 10, 64)
+	if err != nil {
+		return reservationIdParameter{}, errors.New("id de la reservación no tiene type correcto")
+	}
+
+	paramToStruct := reservationIdParameter{ReservationID: reservationId}
+
+	return paramToStruct, nil
+
+}

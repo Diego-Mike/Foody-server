@@ -72,6 +72,8 @@ func buildServer(env config.EnvVariables) (srv *http.Server, err error) {
 		return
 	}
 
+	// TODO: run db migrations
+
 	store := db.NewStore(conn)
 
 	// ----- create *http.Server

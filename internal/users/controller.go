@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/Foody-App-Tech/Main-server/config"
 	"github.com/Foody-App-Tech/Main-server/internal/constants"
@@ -20,15 +21,39 @@ func NewUserController(userService *UserService, globalHelpers *mw.GlobalMiddlew
 	return &UserController{userService: userService, globalHelpers: globalHelpers}
 }
 
+type foodPrice struct {
+	Prettify  string `json:"prettify"`
+	RealPrice int64  `json:"real_price"`
+}
+
+type reservedFood struct {
+	FoodID          int64     `json:"food_id"`
+	FoodTitle       string    `json:"food_title"`
+	FoodPrice       foodPrice `json:"food_price"`
+	FoodImg         string    `json:"food_img"`
+	Amount          int16     `json:"amount"`
+	FoodDetails     string    `json:"food_details"`
+	FoodDescription string    `json:"food_description"`
+}
+
+type userReservation struct {
+	BusinessID    int64          `json:"business_id"`
+	ReservationID int64          `json:"reservation_id"`
+	CreatedAt     time.Time      `json:"created_at"`
+	OrderSchedule time.Time      `json:"order_schedule"`
+	Foods         []reservedFood `json:"foods"`
+}
+
 type FullUserRsp struct {
-	UserID           int64  `json:"user_id"`
-	SocialID         string `json:"social_id"`
-	Username         string `json:"username"`
-	Email            string `json:"email"`
-	Picture          string `json:"picture"`
-	BusinessID       int64  `json:"business_id,omitempty"`
-	BusinessPosition string `json:"business_position,omitempty"`
-	IsBusinessMember bool   `json:"is_business_member"`
+	UserID           int64           `json:"user_id"`
+	SocialID         string          `json:"social_id"`
+	Username         string          `json:"username"`
+	Email            string          `json:"email"`
+	Picture          string          `json:"picture"`
+	BusinessID       int64           `json:"business_id,omitempty"`
+	BusinessPosition string          `json:"business_position,omitempty"`
+	IsBusinessMember bool            `json:"is_business_member"`
+	UserReservation  userReservation `json:"user_reservation"`
 }
 
 func (u *UserController) getCurrentUser(w http.ResponseWriter, r *http.Request) {
@@ -60,6 +85,15 @@ func (u *UserController) getCurrentUser(w http.ResponseWriter, r *http.Request) 
 		user.BusinessID = fullUser.BusinessID.Int64
 		user.IsBusinessMember = true
 	}
+
+	// user current reservation
+	currentReservation, msgErr, err := u.userService.getFullReservation(r)
+	if err != nil {
+		log.Println("problem getting current reservation", err)
+		config.ErrorResponse(w, msgErr, err, http.StatusServiceUnavailable)
+		return
+	}
+	user.UserReservation = currentReservation
 
 	resp := config.ClientResponse{Rsp: struct {
 		User FullUserRsp `json:"user"`

@@ -13,7 +13,7 @@ COMMENT ON TABLE "users" IS 'primary key is composed by user_id and social_id, b
 COMMENT ON COLUMN users.social_id IS 'this field is for the unique id provided by google, or facebook, or tik tok etc etc.. to identify a user';
 
 CREATE TABLE "sessions" (
-  "user_id_session" bigint REFERENCES users (user_id),
+  "user_id_session" bigint REFERENCES "users" ("user_id"),
   "valid" boolean NOT NULL,
   "user_agent" varchar NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now()),

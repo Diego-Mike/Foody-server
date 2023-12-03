@@ -28,7 +28,6 @@ func NewBusinessesService(storage db.Store, env config.EnvVariables) *Businesses
 }
 
 // TODO: test services functions
-
 func (service *BusinessesService) getFood(r *http.Request) ([]businessHomeFood, string, error) {
 	payload := r.Context().Value(constants.RequestPayloadKey).(getBusinessHomeFoodRequest)
 
@@ -46,25 +45,26 @@ func (service *BusinessesService) getFood(r *http.Request) ([]businessHomeFood, 
 	var homeFoodRestructured []businessHomeFood
 	for _, v := range homeFood {
 		prettyCash := prettifyCash.Sprintf("%d", v.FoodPrice)
-		food := Food{
-			FoodID: v.FoodID, FoodTitle: v.FoodTitle, FoodDescription: v.FoodDescription.String, FoodPrice: prettyCash, FoodAvailablePerDay: v.FoodAvailablePerDay.Int16, FoodImg: v.FoodImg,
+		foodStructured := food{
+			FoodID: v.FoodID, FoodTitle: v.FoodTitle, FoodDescription: v.FoodDescription.String, FoodPrice: foodPrice{Prettify: prettyCash, RealPrice: v.FoodPrice},
+			FoodAvailablePerDay: v.FoodAvailablePerDay.Int16, FoodImg: v.FoodImg,
 		}
 
 		if len(homeFoodRestructured) == 0 {
 			homeFoodRestructured = append(homeFoodRestructured, businessHomeFood{BusinessID: v.BusinessID, Name: v.Name, City: v.City,
-				Foods: []Food{food}})
+				Foods: []food{foodStructured}})
 			continue
 		}
 
 		for i, v2 := range homeFoodRestructured {
 			// add food to business
 			if v2.BusinessID == v.BusinessID {
-				homeFoodRestructured[i].Foods = append(homeFoodRestructured[i].Foods, food)
+				homeFoodRestructured[i].Foods = append(homeFoodRestructured[i].Foods, foodStructured)
 				break
 			} else if len(homeFoodRestructured) == (i + 1) {
 				// add new business + first food
 				homeFoodRestructured = append(homeFoodRestructured, businessHomeFood{BusinessID: v.BusinessID, Name: v.Name, City: v.City,
-					Foods: []Food{food}})
+					Foods: []food{foodStructured}})
 				break
 			} else {
 				continue
@@ -175,4 +175,51 @@ func (service *BusinessesService) createNewBusinessFood(r *http.Request) (newFoo
 		FoodPrice:           prettyCash,
 		FoodAvailablePerDay: newFood.FoodAvailablePerDay.Int16,
 	}, 0, nil
+}
+
+func (service *BusinessesService) createReservationTx(r *http.Request) (int64, string, error) {
+
+	user := r.Context().Value(constants.UserContextKey).(mw.JwtUserData)
+	payload := r.Context().Value(constants.RequestPayloadKey).(createReservationRequest)
+
+	var reservationId int64
+
+	err := service.storage.ExecTx(r.Context(), func(q *db.Queries) error {
+		var err error
+
+		newReservationArg := db.CreateReservationParams{BusinessID: payload.businessIdParameter.BusinessID, UserID: user.UserID, OrderSchedule: sql.NullTime{Valid: false, Time: payload.OrderSchedule}}
+		newReservation, err := q.CreateReservation(r.Context(), newReservationArg)
+		if err != nil {
+			return err
+		}
+		// log.Println("new reservation problem", err)
+
+		for _, food := range payload.Foods {
+
+			addFoodToReservationArg := db.AddFoodsToReservationParams{ReservationID: newReservation.ReservationID, FoodID: food.FoodID, Amount: food.Amount, Details: sql.NullString{String: "", Valid: false}}
+			_, err = q.AddFoodsToReservation(r.Context(), addFoodToReservationArg)
+			// log.Println("new food reservation problem", err)
+
+			if err != nil {
+				return err
+			}
+		}
+
+		newNotificationArg := db.CreateNewNotificationParams{ReservationID: newReservation.ReservationID, NotificationTitle: payload.NotificationTitle, NotificationDescription: payload.NotificationDescription}
+		_, err = q.CreateNewNotification(r.Context(), newNotificationArg)
+		if err != nil {
+			return nil
+		}
+		// log.Println("new food notificacion problem", err)
+
+		reservationId = newReservation.ReservationID
+
+		return nil
+	})
+
+	if err != nil {
+		return 0, "Ha ocurrido un problema creando la reserva", err
+	}
+
+	return reservationId, "", nil
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/Foody-App-Tech/Main-server/config"
 	"github.com/Foody-App-Tech/Main-server/internal/constants"
@@ -205,4 +206,60 @@ func checkCreateFoodPayload(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 
 	})
+}
+
+type ReservationFoods struct {
+	FoodID int64 `json:"food_id" validate:"required,gt=0"`
+	Amount int16 `json:"amount" validate:"required,gt=0"`
+}
+
+type createReservationPayload struct {
+	OrderSchedule           time.Time          `json:"order_schedule" validate:"omitempty"`
+	Foods                   []ReservationFoods `json:"foods" validate:"dive"`
+	NotificationTitle       string             `json:"notification_title" validate:"required,gt=0"`
+	NotificationDescription string             `json:"notification_description" validate:"required,gt=0"`
+}
+
+type createReservationRequest struct {
+	createReservationPayload
+	businessIdParameter
+}
+
+func checkCreateReservationPayload(next http.Handler) http.Handler {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		businessId, err := getBusinessId(r)
+		if err != nil {
+			config.ErrorResponse(w, err.Error(), nil, http.StatusBadRequest)
+			return
+		}
+		// log.Println("business id", config.PrettyPrint(businessId))
+
+		// read payload
+		var reqPayload createReservationPayload
+		err = config.ReadBody(w, r, &reqPayload)
+		if err != nil {
+			config.ErrorResponse(w, fmt.Sprintf("Problema leyendo payload: %s", err), nil, http.StatusBadRequest)
+			return
+		}
+		// log.Println("payload", config.PrettyPrint(reqPayload))
+
+		// validate payload
+		fullPayload := createReservationRequest{businessIdParameter: businessId, createReservationPayload: reqPayload}
+		// log.Println("full payload", config.PrettyPrint(fullPayload))
+		payloadValidationErr := config.ValidateData(fullPayload)
+		if payloadValidationErr != nil || len(fullPayload.Foods) == 0 {
+			if len(fullPayload.Foods) == 0 {
+				payloadValidationErr = append(payloadValidationErr, config.CustomValidationError{Field: "foods", Message: "foods no puede ser un slice vacio"})
+			}
+			config.ErrorResponse(w, "Problemas con la validación del payload", payloadValidationErr, http.StatusBadRequest)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), constants.RequestPayloadKey, fullPayload)
+		next.ServeHTTP(w, r.WithContext(ctx))
+
+	})
+
 }

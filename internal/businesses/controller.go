@@ -25,20 +25,25 @@ func NewBusinessesController(businessesService *BusinessesService, globalHelpers
 	}
 }
 
-type Food struct {
-	FoodID              int64  `json:"food_id"`
-	FoodTitle           string `json:"food_title"`
-	FoodDescription     string `json:"food_description"`
-	FoodPrice           string `json:"food_price"`
-	FoodAvailablePerDay int16  `json:"food_available_per_day"`
-	FoodImg             string `json:"food_img"`
+type foodPrice struct {
+	Prettify  string `json:"prettify"`
+	RealPrice int64  `json:"real_price"`
+}
+
+type food struct {
+	FoodID              int64     `json:"food_id"`
+	FoodTitle           string    `json:"food_title"`
+	FoodDescription     string    `json:"food_description"`
+	FoodPrice           foodPrice `json:"food_price"`
+	FoodAvailablePerDay int16     `json:"food_available_per_day"`
+	FoodImg             string    `json:"food_img"`
 }
 
 type businessHomeFood struct {
 	BusinessID int64  `json:"business_id"`
 	Name       string `json:"name"`
 	City       string `json:"city"`
-	Foods      []Food `json:"foods"`
+	Foods      []food `json:"foods"`
 }
 
 type homeFoodRsp struct {
@@ -175,5 +180,24 @@ func (c *BusinessesController) createFood(w http.ResponseWriter, r *http.Request
 	}
 
 	config.WriteResponse(w, http.StatusCreated, newFood)
+
+}
+
+func (c *BusinessesController) createReservation(w http.ResponseWriter, r *http.Request) {
+
+	newReservationId, txMsgErr, txErr := c.businessesService.createReservationTx(r)
+
+	if txErr != nil {
+		config.ErrorResponse(w, txMsgErr, txErr.Error(), http.StatusServiceUnavailable)
+		return
+	}
+
+	rsp := config.ClientResponse{Rsp: struct {
+		ReservationId int64 `json:"reservation_id"`
+	}{
+		ReservationId: newReservationId,
+	}}
+
+	config.WriteResponse(w, http.StatusCreated, rsp)
 
 }

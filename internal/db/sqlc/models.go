@@ -45,12 +45,36 @@ type BusinessMember struct {
 	CreatedAt        time.Time `json:"created_at"`
 }
 
-type BusinessSchedule struct {
-	BusinessID int64 `json:"business_id"`
-	// 1 = lunes, 2 = martes
-	DayOfWeek   int16     `json:"day_of_week"`
-	OpeningHour time.Time `json:"opening_hour"`
-	ClosingHour time.Time `json:"closing_hour"`
+type BusinessReservation struct {
+	ReservationID int64        `json:"reservation_id"`
+	BusinessID    int64        `json:"business_id"`
+	UserID        int64        `json:"user_id"`
+	OrderSchedule sql.NullTime `json:"order_schedule"`
+	Accepted      bool         `json:"accepted"`
+	CreatedAt     sql.NullTime `json:"created_at"`
+}
+
+type BusinessReservationsNotificacion struct {
+	ReservationID           int64        `json:"reservation_id"`
+	NotificationTitle       string       `json:"notification_title"`
+	NotificationDescription string       `json:"notification_description"`
+	CreatedAt               sql.NullTime `json:"created_at"`
+}
+
+type BusinessReservationsState struct {
+	ReservationID         int64        `json:"reservation_id"`
+	CancelledByClient     bool         `json:"cancelled_by_client"`
+	CancelledByBusiness   bool         `json:"cancelled_by_business"`
+	ReasonForCancellation string       `json:"reason_for_cancellation"`
+	CreatedAt             sql.NullTime `json:"created_at"`
+}
+
+type ReserveFood struct {
+	ReservationID int64          `json:"reservation_id"`
+	FoodID        int64          `json:"food_id"`
+	Amount        int16          `json:"amount"`
+	Details       sql.NullString `json:"details"`
+	CreatedAt     sql.NullTime   `json:"created_at"`
 }
 
 type Session struct {

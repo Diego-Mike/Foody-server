@@ -33,7 +33,5 @@ Working on 👇
 
 * Road to production 🚀
 
-  - [ ] Github pipelines for backend - run tests and deploy
   - [ ] Where to deploy backend (and database) and deploy it
-  - [ ] Github pipelines for fronted - run tests and deploy
   - [ ] Where to deploy fronted and deploy it
