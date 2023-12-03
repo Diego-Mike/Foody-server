@@ -8,7 +8,8 @@ RUN go build -o foody-server ./cmd/server
 FROM alpine:3.18
 WORKDIR /app
 COPY --from=builder /app/foody-server .
-COPY .env .
+COPY internal/db/migrations ./internal/db/migrations
+# COPY .env .
 
 EXPOSE 8000
 CMD [ "/app/foody-server" ]
