@@ -18,11 +18,12 @@ type GlobalMiddlewares struct {
 	RefreshTokenTime string
 	ApiKey           string
 	SecureCookies    string
+	Domain           string
 	storage          *db.SQLCStore
 }
 
-func NewGlobalMiddlewareService(accessTokenKey, accessTokenTime, refreshTokenKey, refreshTokenTime, apiKey, secureCookies string, storage *db.SQLCStore) *GlobalMiddlewares {
-	return &GlobalMiddlewares{storage: storage, AccessTokenKey: accessTokenKey, AccessTokenTime: accessTokenTime, RefreshTokenKey: refreshTokenKey, RefreshTokenTime: refreshTokenTime, SecureCookies: secureCookies, ApiKey: apiKey}
+func NewGlobalMiddlewareService(accessTokenKey, accessTokenTime, refreshTokenKey, refreshTokenTime, apiKey, secureCookies, Domain string, storage *db.SQLCStore) *GlobalMiddlewares {
+	return &GlobalMiddlewares{storage: storage, AccessTokenKey: accessTokenKey, AccessTokenTime: accessTokenTime, RefreshTokenKey: refreshTokenKey, RefreshTokenTime: refreshTokenTime, SecureCookies: secureCookies, ApiKey: apiKey, Domain: Domain}
 }
 
 func (service *GlobalMiddlewares) IdentifyUser(next http.Handler) http.Handler {

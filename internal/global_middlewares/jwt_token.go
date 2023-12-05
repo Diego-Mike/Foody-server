@@ -64,7 +64,7 @@ func (service *GlobalMiddlewares) CreateRefreshOrAccessToken(w http.ResponseWrit
 		return "", err
 	}
 
-	http.SetCookie(w, &http.Cookie{Name: cookieName, Value: newToken, Path: "/", Domain: "localhost", MaxAge: tokenExpiryTime, HttpOnly: true, Secure: secureCookies})
+	http.SetCookie(w, &http.Cookie{Name: cookieName, Value: newToken, Path: "/", Domain: service.Domain, MaxAge: tokenExpiryTime, HttpOnly: true, Secure: secureCookies})
 
 	return newToken, nil
 }

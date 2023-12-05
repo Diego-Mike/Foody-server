@@ -1,6 +1,7 @@
 package login
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -28,7 +29,7 @@ func (l *LoginController) googleLogin(w http.ResponseWriter, r *http.Request) {
 	googleUserTokens, err := l.googleOauthService.getGoogleUserTokens(w, r)
 	if err != nil {
 		log.Println(err)
-		http.Redirect(w, r, "http://localhost:3000/google_login/error", http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("%s/google-login/error", l.googleOauthService.env.WEBSTIE), http.StatusSeeOther)
 		return
 	}
 	// log.Printf("google user tokens %s", config.PrettyPrint(googleUserTokens))
@@ -37,7 +38,7 @@ func (l *LoginController) googleLogin(w http.ResponseWriter, r *http.Request) {
 	googleUserData, err := l.googleOauthService.getGoogleUserData(googleUserTokens)
 	if err != nil {
 		log.Println(err)
-		http.Redirect(w, r, "http://localhost:3000/google_login/error", http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("%s/google-login/error", l.googleOauthService.env.WEBSTIE), http.StatusSeeOther)
 		return
 	}
 	// log.Printf("google user Data %s", config.PrettyPrint(googleUserData))
@@ -47,7 +48,7 @@ func (l *LoginController) googleLogin(w http.ResponseWriter, r *http.Request) {
 	user, err := l.loginService.saveUserData(userData, r.Context())
 	if err != nil {
 		log.Println(err)
-		http.Redirect(w, r, "http://localhost:3000/google_login/error", http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("%s/google-login/error", l.googleOauthService.env.WEBSTIE), http.StatusSeeOther)
 		return
 	}
 	// log.Printf("google user %s", config.PrettyPrint(user))
@@ -57,7 +58,7 @@ func (l *LoginController) googleLogin(w http.ResponseWriter, r *http.Request) {
 	_, err = l.loginService.createSession(user.UserID, userAgent, r.Context())
 	if err != nil {
 		log.Println(err)
-		http.Redirect(w, r, "http://localhost:3000/google_login/error", http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("%s/google-login/error", l.googleOauthService.env.WEBSTIE), http.StatusSeeOther)
 		return
 	}
 	// log.Printf("google user session %s", config.PrettyPrint(session))
@@ -67,7 +68,7 @@ func (l *LoginController) googleLogin(w http.ResponseWriter, r *http.Request) {
 	_, err = l.globalHelpers.CreateRefreshOrAccessToken(w, refreshTokenData, l.googleOauthService.env.REFRESH_TOKEN_TIME, l.googleOauthService.env.REFRESH_TOKEN_KEY, "refresh-token")
 	if err != nil {
 		log.Println("problem creating refresh token when logging in", err)
-		http.Redirect(w, r, "http://localhost:3000/google_login/error", http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("%s/google-login/error", l.googleOauthService.env.WEBSTIE), http.StatusSeeOther)
 		return
 	}
 	// log.Println("refresh token", refreshToken)
@@ -77,13 +78,13 @@ func (l *LoginController) googleLogin(w http.ResponseWriter, r *http.Request) {
 	_, err = l.globalHelpers.CreateRefreshOrAccessToken(w, accessTokenData, l.googleOauthService.env.ACCESS_TOKEN_TIME, l.googleOauthService.env.ACCESS_TOKEN_KEY, "access-token")
 	if err != nil {
 		log.Println("problem creating refresh token when logging in", err)
-		http.Redirect(w, r, "http://localhost:3000/google_login/error", http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("%s/google-login/error", l.googleOauthService.env.WEBSTIE), http.StatusSeeOther)
 		return
 	}
 	// log.Println("access token", accessToken)
 
 	// redirect back to client
-	http.Redirect(w, r, "http://localhost:3000", http.StatusSeeOther)
+	http.Redirect(w, r, l.googleOauthService.env.WEBSTIE, http.StatusSeeOther)
 }
 
 func (l *LoginController) facebookLogin(w http.ResponseWriter, r *http.Request) {
@@ -92,7 +93,7 @@ func (l *LoginController) facebookLogin(w http.ResponseWriter, r *http.Request) 
 	facebookToken, err := l.facebookOauthService.getFacebookAccessToken(r)
 	if err != nil {
 		log.Println(err)
-		http.Redirect(w, r, "http://localhost:3000/facebook_login/error", http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("%s/facebook-login/error", l.facebookOauthService.env.WEBSTIE), http.StatusSeeOther)
 		return
 	}
 	// log.Printf("facebook access token %s", config.PrettyPrint(facebookToken))
@@ -101,7 +102,7 @@ func (l *LoginController) facebookLogin(w http.ResponseWriter, r *http.Request) 
 	facebookUser, err := l.facebookOauthService.getFacebookUserData(facebookToken)
 	if err != nil {
 		log.Println(err)
-		http.Redirect(w, r, "http://localhost:3000/facebook_login/error", http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("%s/facebook-login/error", l.facebookOauthService.env.WEBSTIE), http.StatusSeeOther)
 	}
 	// log.Printf("facebook user data %s", config.PrettyPrint(facebookUser))
 
@@ -110,7 +111,7 @@ func (l *LoginController) facebookLogin(w http.ResponseWriter, r *http.Request) 
 	user, err := l.loginService.saveUserData(userData, r.Context())
 	if err != nil {
 		log.Println(err)
-		http.Redirect(w, r, "http://localhost:3000/facebook_login/error", http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("%s/facebook-login/error", l.facebookOauthService.env.WEBSTIE), http.StatusSeeOther)
 		return
 	}
 	// log.Printf("facebook user %s", config.PrettyPrint(user))
@@ -120,7 +121,7 @@ func (l *LoginController) facebookLogin(w http.ResponseWriter, r *http.Request) 
 	_, err = l.loginService.createSession(user.UserID, userAgent, r.Context())
 	if err != nil {
 		log.Println(err)
-		http.Redirect(w, r, "http://localhost:3000/facebook_login/error", http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("%s/facebook-login/error", l.facebookOauthService.env.WEBSTIE), http.StatusSeeOther)
 		return
 	}
 	// log.Printf("facebook user session %s", config.PrettyPrint(session))
@@ -130,7 +131,7 @@ func (l *LoginController) facebookLogin(w http.ResponseWriter, r *http.Request) 
 	_, err = l.globalHelpers.CreateRefreshOrAccessToken(w, refreshTokenData, l.facebookOauthService.env.REFRESH_TOKEN_TIME, l.facebookOauthService.env.REFRESH_TOKEN_KEY, "refresh-token")
 	if err != nil {
 		log.Println("problem creating refresh token when logging in", err)
-		http.Redirect(w, r, "http://localhost:3000/google_login/error", http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("%s/google-login/error", l.googleOauthService.env.WEBSTIE), http.StatusSeeOther)
 		return
 	}
 	// log.Println("refresh token", refreshToken)
@@ -140,13 +141,13 @@ func (l *LoginController) facebookLogin(w http.ResponseWriter, r *http.Request) 
 	_, err = l.globalHelpers.CreateRefreshOrAccessToken(w, accessTokenData, l.facebookOauthService.env.ACCESS_TOKEN_TIME, l.facebookOauthService.env.ACCESS_TOKEN_KEY, "access-token")
 	if err != nil {
 		log.Println("problem creating refresh token when logging in", err)
-		http.Redirect(w, r, "http://localhost:3000/google_login/error", http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("%s/google-login/error", l.googleOauthService.env.WEBSTIE), http.StatusSeeOther)
 		return
 	}
 	// log.Println("access token", accessToken)
 
 	// redirect back to client
-	http.Redirect(w, r, "http://localhost:3000", http.StatusSeeOther)
+	http.Redirect(w, r, l.facebookOauthService.env.WEBSTIE, http.StatusSeeOther)
 
 }
 
@@ -178,7 +179,7 @@ func (l *LoginController) accessToken(w http.ResponseWriter, r *http.Request) {
 
 	expiryTime, _ := strconv.Atoi(l.globalHelpers.AccessTokenTime)
 	secureCookies, _ := strconv.ParseBool(l.globalHelpers.SecureCookies)
-	cookie := &http.Cookie{Name: "access-token", Value: accessToken, Path: "/", Domain: "localhost", MaxAge: expiryTime, HttpOnly: true, Secure: secureCookies} // for prod 15min - for dev 5min
+	cookie := &http.Cookie{Name: "access-token", Value: accessToken, Path: "/", Domain: l.globalHelpers.Domain, MaxAge: expiryTime, HttpOnly: true, Secure: secureCookies} // for prod 15min - for dev 5min
 	http.SetCookie(w, cookie)
 
 	// send response
@@ -198,9 +199,9 @@ func (l *LoginController) logout(w http.ResponseWriter, r *http.Request) {
 	secureCookies, _ := strconv.ParseBool(l.globalHelpers.SecureCookies)
 
 	//logout
-	refreshTokenCookie := &http.Cookie{Name: "refresh-token", Value: "", MaxAge: -1, Path: "/", Domain: "localhost", Secure: secureCookies, HttpOnly: true}
+	refreshTokenCookie := &http.Cookie{Name: "refresh-token", Value: "", MaxAge: -1, Path: "/", Domain: l.globalHelpers.Domain, Secure: secureCookies, HttpOnly: true}
 	http.SetCookie(w, refreshTokenCookie)
-	accessTokenCookie := &http.Cookie{Name: "access-token", Value: "", MaxAge: -1, Path: "/", Domain: "localhost", Secure: secureCookies, HttpOnly: true}
+	accessTokenCookie := &http.Cookie{Name: "access-token", Value: "", MaxAge: -1, Path: "/", Domain: l.globalHelpers.Domain, Secure: secureCookies, HttpOnly: true}
 	http.SetCookie(w, accessTokenCookie)
 
 	// send response

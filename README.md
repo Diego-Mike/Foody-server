@@ -33,5 +33,5 @@ Working on 👇
 
 * Road to production 🚀
 
-  - [ ] Where to deploy backend (and database) and deploy it
+  - [x] Where to deploy backend (and database) and deploy it
   - [ ] Where to deploy fronted and deploy it

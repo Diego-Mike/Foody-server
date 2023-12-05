@@ -24,6 +24,8 @@ type EnvVariables struct {
 	ACCESS_TOKEN_TIME      string `mapstructure:"ACCESS_TOKEN_TIME"`
 	API_KEY                string `mapstructure:"API_KEY"`
 	SECURE_COOKIES         string `mapstructure:"SECURE_COOKIES"`
+	WEBSTIE                string `mapstructure:"WEBSTIE"`
+	DOMAIN                 string `mapstructure:"DOMAIN"`
 }
 
 func LoadEnv(path string) (config EnvVariables, err error) {
@@ -112,6 +114,14 @@ func LoadEnv(path string) (config EnvVariables, err error) {
 
 	if config.REFRESH_TOKEN_TIME == "" {
 		err = errors.New("env REFRESH_TOKEN_TIME must be provided to complete auth flow")
+	}
+
+	if config.WEBSTIE == "" {
+		err = errors.New("env WEBSTIE must be provided to complete auth flow")
+	}
+
+	if config.DOMAIN == "" {
+		err = errors.New("env DOMAIN must be provided to complete auth flow")
 	}
 
 	return
