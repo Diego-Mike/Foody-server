@@ -40,6 +40,8 @@ func (service *GoogleOauthService) getGoogleUserTokens(w http.ResponseWriter, r 
 	googleCode := r.URL.Query().Get("code")
 	url := "https://oauth2.googleapis.com/token"
 
+	log.Println("envs for google oauth", service.env.GOOGLE_CLIENT_ID, service.env.GOOGLE_CLIENT_SECRET, service.env.GOOGLE_REDIRECT_URI, service.env.GOOGLE_GRANT_TYPE)
+
 	qs := struct {
 		code          string
 		client_id     string
